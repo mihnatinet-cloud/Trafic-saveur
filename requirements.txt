@@ -1,0 +1,5 @@
+# Dépendances locales — l'application fonctionne 100% hors ligne (SQLite intégré)
+openpyxl>=3.1.0
+pillow>=10.0.0
+# Optionnel : pour générer l'exécutable .exe
+pyinstaller>=6.0

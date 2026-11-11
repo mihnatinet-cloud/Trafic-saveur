@@ -53,6 +53,9 @@ if not LOGO_PATH.exists():
     alt_logo = ROOT / "Affiche_Trafik_Saveurs_reference.png"
     if alt_logo.exists():
         LOGO_PATH = alt_logo
+    else:
+        # Logo intégré (généré localement) — application 100% hors ligne
+        LOGO_PATH = ROOT / "icon.png"
 
 # لوحة الألوان الاحترافية
 BG = "#F6F3EC"
@@ -208,6 +211,10 @@ I18N = {
         "to_date": "Au",
         "view_report": "Afficher Rapport",
         "export_csv": "Exporter CSV",
+        "export_excel": "📗 Exporter Excel",
+        "import_customers_excel": "📥 Importer Clients (Excel)",
+        "download_customers_template": "📄 Modèle Clients",
+        "excel_missing": "Bibliothèque 'openpyxl' introuvable.\nInstallez-la une fois avec : pip install openpyxl",
         "total_sales": "Total Ventes",
         "total_purchases": "Total Achats",
         "cogs": "Coût des Marchandises Vendues",
@@ -345,6 +352,10 @@ I18N = {
         "to_date": "إلى تاريخ",
         "view_report": "عرض التقرير",
         "export_csv": "تصدير CSV",
+        "export_excel": "📗 تصدير إكسل",
+        "import_customers_excel": "📥 استيراد زبائن (إكسل)",
+        "download_customers_template": "📄 نموذج الزبائن",
+        "excel_missing": "مكتبة 'openpyxl' غير مثبتة.\nثبّتها مرة واحدة بالأمر: pip install openpyxl",
         "total_sales": "إجمالي المبيعات",
         "total_purchases": "إجمالي المشتريات",
         "cogs": "تكلفة البضاعة المباعة",
@@ -1239,6 +1250,8 @@ class App(tk.Tk):
                   font=("Segoe UI", 9), relief="flat", padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
         tk.Button(bar, text=t("print_products"), command=self.print_products_report, bg="#E8DFD1", fg=BROWN,
                   font=("Segoe UI", 9), relief="flat", padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
+        tk.Button(bar, text=t("export_excel"), command=self.export_products_excel, bg="#217A4B", fg="white",
+                  font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
 
         search_frame = tk.Frame(bar, bg=BG)
         search_frame.pack(side="right" if CURRENT_LANG=="fr" else "left", padx=5)
@@ -1461,6 +1474,8 @@ class App(tk.Tk):
                   bg="#E8DFD1", fg=BROWN, relief="flat", font=("Segoe UI", 9), padx=9, pady=6, cursor="hand2").pack(side=side, padx=3)
         tk.Button(bar, text=t("print_sales_list"), command=self.confirm_and_print_sales_report, bg="#E8DFD1", fg=BROWN,
                   relief="flat", font=("Segoe UI", 9), padx=9, pady=6, cursor="hand2").pack(side=side, padx=3)
+        tk.Button(bar, text=t("export_excel"), command=self.export_sales_excel, bg="#217A4B", fg="white",
+                  relief="flat", font=("Segoe UI", 9, "bold"), padx=9, pady=6, cursor="hand2").pack(side=side, padx=3)
 
         search_frame = tk.Frame(bar, bg=BG)
         search_frame.pack(side="right" if CURRENT_LANG=="fr" else "left", padx=5)
@@ -2033,6 +2048,12 @@ class App(tk.Tk):
                   relief="flat", font=("Segoe UI", 9), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
         tk.Button(bar, text=t("print_customers_list"), command=self.print_customers_report, bg="#E8DFD1", fg=BROWN,
                   relief="flat", font=("Segoe UI", 9), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
+        tk.Button(bar, text=t("import_customers_excel"), command=self.import_customers_excel, bg="#1B6396", fg="white",
+                  relief="flat", font=("Segoe UI", 9, "bold"), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
+        tk.Button(bar, text=t("download_customers_template"), command=self.save_customers_template, bg="#E8DFD1", fg=BROWN,
+                  relief="flat", font=("Segoe UI", 9), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
+        tk.Button(bar, text=t("export_excel"), command=self.export_customers_excel, bg="#217A4B", fg="white",
+                  relief="flat", font=("Segoe UI", 9, "bold"), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
 
         cols = ("id", "name", "phone", "address", "debt")
         heads = ("N°", t("customer"), t("phone"), t("address"), t("balance_due"))
@@ -2200,6 +2221,280 @@ class App(tk.Tk):
         webbrowser.open(p.as_uri())
 
     # ==========================================
+    # 2.5 Export / Import Excel (100% hors ligne)
+    # ==========================================
+    def _require_openpyxl(self):
+        if not OPENPYXL_AVAILABLE:
+            beep_err()
+            messagebox.showerror(t("app_title"), t("excel_missing"))
+            return False
+        return True
+
+    def _ask_save_xlsx(self, base_name):
+        return filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel Files", "*.xlsx")],
+            initialfile=f"{base_name}_{today()}.xlsx")
+
+    def _write_xlsx(self, path, sheets):
+        """sheets = liste de (nom_feuille, headers, rows, rtl). Écrit un classeur stylé."""
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        wb = Workbook()
+        wb.remove(wb.active)
+        thin = Side(style="thin", color="D8CDBE")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        for sheet_name, headers, rows, rtl in sheets:
+            ws = wb.create_sheet(title=sheet_name[:31])
+            ws.sheet_view.rightToLeft = bool(rtl)
+            hfill = PatternFill("solid", fgColor="3B1B12")
+            hfont = Font(bold=True, color="FFC52E", size=11)
+            for ci, h in enumerate(headers, 1):
+                c = ws.cell(row=1, column=ci, value=h)
+                c.fill = hfill; c.font = hfont; c.border = border
+                c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            ws.row_dimensions[1].height = 24
+            zfill = PatternFill("solid", fgColor="F6F3EC")
+            for ri, row in enumerate(rows, 2):
+                for ci, v in enumerate(row, 1):
+                    c = ws.cell(row=ri, column=ci, value=v)
+                    c.border = border
+                    if isinstance(v, (int, float)) and not isinstance(v, bool):
+                        c.number_format = "#,##0.00"
+                    if ri % 2 == 0:
+                        c.fill = zfill
+            for ci, h in enumerate(headers, 1):
+                maxlen = len(str(h))
+                for row in rows[:400]:
+                    if ci - 1 < len(row):
+                        maxlen = max(maxlen, len(str(row[ci - 1] if row[ci - 1] is not None else "")))
+                ws.column_dimensions[get_column_letter(ci)].width = min(42, max(9, maxlen + 3))
+            ws.freeze_panes = "A2"
+            if rows:
+                ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(rows)+1}"
+        wb.save(path)
+
+    def export_products_excel(self):
+        if not self._require_openpyxl(): return
+        path = self._ask_save_xlsx("produits_trafik_saveurs")
+        if not path: return
+        try:
+            rows = []
+            for r in self.db.all("""SELECT p.*, COALESCE(SUM(si.subtotal),0) ca FROM products p
+                                    LEFT JOIN sale_items si ON si.product_id=p.id GROUP BY p.id ORDER BY p.id"""):
+                val_stock = (r["stock"] / r["charg"] if r["charg"] else r["stock"]) * r["purchase_price"]
+                rows.append([r["id"], r["name"], r["category"], r["barcode"] or "", r["charg"],
+                             r["purchase_price"], r["sale_price"], r["stock"], r["unit"],
+                             r["min_stock"], r["expiry"] or "", round(val_stock, 2),
+                             round((r["sale_price"] - r["purchase_price"]) * r["stock"], 2)])
+            heads = ["N°", t("designation"), t("category"), t("barcode"), t("charg"),
+                     t("purchase_price"), t("sale_price"), t("stock"), t("unit"),
+                     t("alert_threshold"), t("expiry_date"), "Valeur Stock", "Marge Potentielle"]
+            self._write_xlsx(path, [("Produits", heads, rows, CURRENT_LANG == "ar")])
+            beep_ok()
+            messagebox.showinfo(t("app_title"),
+                                f"تم تصدير {len(rows)} منتجاً إلى:\n{path}" if CURRENT_LANG == "ar"
+                                else f"{len(rows)} produits exportés vers :\n{path}")
+        except Exception as e:
+            beep_err()
+            messagebox.showerror(t("app_title"), f"Erreur Export Excel : {e}")
+
+    def export_sales_excel(self):
+        if not self._require_openpyxl(): return
+        path = self._ask_save_xlsx("ventes_trafik_saveurs")
+        if not path: return
+        try:
+            sales = self.db.all("""SELECT s.*, COALESCE(c.name, ?) customer FROM sales s
+                                   LEFT JOIN customers c ON c.id=s.customer_id ORDER BY s.id""",
+                                (t("counter_customer"),))
+            srows = [[r["id"], r["sale_date"], r["customer"], r["payment_method"],
+                      r["total"], r["paid"], r["total"] - r["paid"], r["notes"] or ""] for r in sales]
+            sheads = [t("invoice_num"), t("date"), t("customer"), t("payment_method"),
+                      t("total_net"), t("paid"), t("due"), t("notes")]
+            items = self.db.all("""SELECT si.sale_id, s.sale_date, si.product_name, si.charg,
+                                          si.quantity, si.unit_price, si.unit_cost, si.subtotal
+                                   FROM sale_items si JOIN sales s ON s.id=si.sale_id ORDER BY si.id""")
+            irows = [[r["sale_id"], r["sale_date"], r["product_name"], r["charg"],
+                      r["quantity"], r["unit_price"], r["unit_cost"],
+                      round(r["subtotal"] - r["unit_cost"] * r["quantity"], 2), r["subtotal"]] for r in items]
+            iheads = [t("invoice_num"), t("date"), t("designation"), t("charg"),
+                      t("quantity"), t("sale_price"), t("unit_cost"), "Marge", t("total_net")]
+            tot = sum(r["total"] for r in sales); paid = sum(r["paid"] for r in sales)
+            sum_rows = [["Total Factures", len(sales)], ["Total Ventes", round(tot, 2)],
+                        ["Total Payé", round(paid, 2)], ["Total Crédits", round(tot - paid, 2)]]
+            self._write_xlsx(path, [
+                ("Ventes", sheads, srows, CURRENT_LANG == "ar"),
+                ("Lignes Ventes", iheads, irows, CURRENT_LANG == "ar"),
+                ("Résumé", ["Indicateur", "Valeur"], sum_rows, False)])
+            beep_ok()
+            messagebox.showinfo(t("app_title"),
+                                f"تم تصدير {len(sales)} فاتورة بنجاح !\n{path}" if CURRENT_LANG == "ar"
+                                else f"{len(sales)} factures exportées avec succès !\n{path}")
+        except Exception as e:
+            beep_err()
+            messagebox.showerror(t("app_title"), f"Erreur Export Excel : {e}")
+
+    def export_purchases_excel(self):
+        if not self._require_openpyxl(): return
+        path = self._ask_save_xlsx("achats_trafik_saveurs")
+        if not path: return
+        try:
+            purch = self.db.all("SELECT * FROM purchases ORDER BY id")
+            prows = [[r["id"], r["purchase_date"], r["supplier"] or "", r["total"],
+                      r["paid"], r["total"] - r["paid"], r["notes"] or ""] for r in purch]
+            pheads = ["N°", t("date"), t("supplier"), t("total_net"), t("paid"), t("due"), t("notes")]
+            items = self.db.all("""SELECT pi.purchase_id, p.purchase_date, pi.product_name,
+                                          pi.quantity, pi.unit_cost, pi.subtotal
+                                   FROM purchase_items pi JOIN purchases p ON p.id=pi.purchase_id ORDER BY pi.id""")
+            irows = [[r["purchase_id"], r["purchase_date"], r["product_name"],
+                      r["quantity"], r["unit_cost"], r["subtotal"]] for r in items]
+            iheads = ["N°", t("date"), t("designation"), t("quantity"), t("unit_cost"), t("total_net")]
+            self._write_xlsx(path, [
+                ("Achats", pheads, prows, CURRENT_LANG == "ar"),
+                ("Lignes Achats", iheads, irows, CURRENT_LANG == "ar")])
+            beep_ok()
+            messagebox.showinfo(t("app_title"),
+                                f"تم تصدير {len(purch)} عملية شراء !\n{path}" if CURRENT_LANG == "ar"
+                                else f"{len(purch)} achats exportés !\n{path}")
+        except Exception as e:
+            beep_err()
+            messagebox.showerror(t("app_title"), f"Erreur Export Excel : {e}")
+
+    def export_customers_excel(self):
+        if not self._require_openpyxl(): return
+        path = self._ask_save_xlsx("clients_trafik_saveurs")
+        if not path: return
+        try:
+            rows = []
+            for c in self.db.all("SELECT * FROM customers ORDER BY id"):
+                due = self.db.one("SELECT COALESCE(SUM(total-paid),0) n FROM sales WHERE customer_id=?",
+                                  (c["id"],))["n"]
+                nb = self.db.one("SELECT COUNT(*) n FROM sales WHERE customer_id=?", (c["id"],))["n"]
+                rows.append([c["id"], c["name"], c["phone"], c["address"], nb, round(due, 2), c["notes"] or ""])
+            heads = ["N°", t("customer"), t("phone"), t("address"), "Nb Factures", t("balance_due"), t("notes")]
+            self._write_xlsx(path, [("Clients", heads, rows, CURRENT_LANG == "ar")])
+            beep_ok()
+            messagebox.showinfo(t("app_title"),
+                                f"تم تصدير {len(rows)} زبوناً !\n{path}" if CURRENT_LANG == "ar"
+                                else f"{len(rows)} clients exportés !\n{path}")
+        except Exception as e:
+            beep_err()
+            messagebox.showerror(t("app_title"), f"Erreur Export Excel : {e}")
+
+    def save_customers_template(self):
+        if not self._require_openpyxl(): return
+        path = self._ask_save_xlsx("modele_import_clients")
+        if not path: return
+        try:
+            heads = ["الاسم / Nom", "الهاتف / Téléphone", "العنوان / Adresse", "ملاحظات / Notes"]
+            demo = [["Client Exemple", "0561000000", "Alger", "—"]]
+            self._write_xlsx(path, [("Clients", heads, demo, False)])
+            beep_ok()
+            messagebox.showinfo(t("app_title"),
+                                "تم حفظ نموذج استيراد الزبائن !" if CURRENT_LANG == "ar"
+                                else "Le modèle d'importation des clients a été enregistré !")
+        except Exception as e:
+            messagebox.showerror(t("app_title"), f"Erreur : {e}")
+
+    def _read_tabular_file(self, filepath):
+        """Retourne les lignes (liste de tuples) d'un fichier xlsx/xls/csv — hors ligne."""
+        if filepath.lower().endswith(".csv"):
+            with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
+                sample = f.read(2048); f.seek(0)
+                delim = ";" if sample.count(";") >= sample.count(",") else ","
+                return list(csv.reader(f, delimiter=delim))
+        if not OPENPYXL_AVAILABLE:
+            raise RuntimeError(t("excel_missing"))
+        wb = openpyxl.load_workbook(filepath, data_only=True)
+        ws = wb.active
+        return [tuple("" if c is None else c for c in row) for row in ws.iter_rows(values_only=True)]
+
+    def import_customers_excel(self):
+        filepath = filedialog.askopenfilename(
+            title="Sélectionner le fichier Clients / اختر ملف إكسل للزبائن",
+            filetypes=[("Excel & CSV", "*.xlsx *.xls *.csv"), ("Tous les fichiers", "*.*")])
+        if not filepath: return
+        try:
+            rows = self._read_tabular_file(filepath)
+            if not rows or len(rows) < 2:
+                messagebox.showerror(t("app_title"), "Le fichier est vide."); return
+            header = [str(c or "").strip().lower() for c in rows[0]]
+            col = {}
+            for idx, h in enumerate(header):
+                if any(k in h for k in ["nom", "client", "اسم", "زبون", "customer"]):
+                    col.setdefault("name", idx)
+                elif any(k in h for k in ["tel", "phone", "هاتف", "جوال", "موبايل"]):
+                    col.setdefault("phone", idx)
+                elif any(k in h for k in ["adresse", "عنوان", "address"]):
+                    col.setdefault("address", idx)
+                elif any(k in h for k in ["note", "remarque", "ملاحظ"]):
+                    col.setdefault("notes", idx)
+            if "name" not in col:
+                messagebox.showerror(t("app_title"),
+                                     "Colonne 'Nom / الاسم' introuvable dans le fichier."
+                                     if CURRENT_LANG == "fr" else "عمود 'الاسم' غير موجود في الملف.")
+                return
+            added, updated, skipped = 0, 0, 0
+            for r in rows[1:]:
+                if not r or all(str(x or "").strip() == "" for x in r): continue
+                name = str(r[col["name"]] or "").strip()
+                if not name: continue
+                phone = str(r[col["phone"]] or "").strip() if "phone" in col and col["phone"] < len(r) else ""
+                addr = str(r[col["address"]] or "").strip() if "address" in col and col["address"] < len(r) else ""
+                notes = str(r[col["notes"]] or "").strip() if "notes" in col and col["notes"] < len(r) else ""
+                exist = self.db.one("SELECT id FROM customers WHERE name=?", (name,))
+                if exist:
+                    self.db.run("UPDATE customers SET phone=?, address=?, notes=? WHERE id=?",
+                                (phone, addr, notes, exist["id"]))
+                    updated += 1
+                else:
+                    self.db.run("INSERT INTO customers(name, phone, address, notes) VALUES(?,?,?,?)",
+                                (name, phone, addr, notes))
+                    added += 1
+            beep_ok()
+            msg = (f"✅ زبائن جدد: {added}\n🔄 تم تحديثهم: {updated}" if CURRENT_LANG == "ar"
+                   else f"✅ Nouveaux clients : {added}\n🔄 Mis à jour : {updated}")
+            messagebox.showinfo(t("app_title"), msg)
+            if hasattr(self, "refresh_customers"):
+                self.refresh_customers()
+        except Exception as e:
+            beep_err()
+            messagebox.showerror(t("app_title"), f"Erreur lors de l'import : {e}")
+
+    def export_report_excel(self, a, b):
+        if not self._require_openpyxl(): return
+        path = self._ask_save_xlsx(f"rapport_{a}_{b}")
+        if not path: return
+        try:
+            mvt = []
+            for r in self.db.all("SELECT id, sale_date, total, paid FROM sales WHERE sale_date BETWEEN ? AND ?", (a, b)):
+                mvt.append([r["sale_date"], "Vente", r["id"], r["total"], r["paid"], r["total"] - r["paid"]])
+            for r in self.db.all("SELECT id, purchase_date, total, paid FROM purchases WHERE purchase_date BETWEEN ? AND ?", (a, b)):
+                mvt.append([r["purchase_date"], "Achat", r["id"], r["total"], r["paid"], r["total"] - r["paid"]])
+            for r in self.db.all("SELECT expense_date, title, amount FROM expenses WHERE expense_date BETWEEN ? AND ?", (a, b)):
+                mvt.append([r["expense_date"], "Dépense", r["title"], r["amount"], r["amount"], 0])
+            mheads = [t("date"), "Type", "Réf", t("total_net"), t("paid"), t("due")]
+            ts = self.db.one("SELECT COALESCE(SUM(total),0) tt, COALESCE(SUM(paid),0) pp FROM sales WHERE sale_date BETWEEN ? AND ?", (a, b))
+            tp = self.db.one("SELECT COALESCE(SUM(total),0) tt FROM purchases WHERE purchase_date BETWEEN ? AND ?", (a, b))
+            te = self.db.one("SELECT COALESCE(SUM(amount),0) tt FROM expenses WHERE expense_date BETWEEN ? AND ?", (a, b))
+            marge = ts["tt"] - tp["tt"] - te["tt"]
+            summary = [["Total Ventes", round(ts["tt"], 2)], ["Total Encaissé", round(ts["pp"], 2)],
+                       ["Crédits Clients", round(ts["tt"] - ts["pp"], 2)],
+                       ["Total Achats", round(tp["tt"], 2)], ["Total Dépenses", round(te["tt"], 2)],
+                       ["Résultat Net", round(marge, 2)]]
+            self._write_xlsx(path, [
+                ("Mouvements", mheads, mvt, CURRENT_LANG == "ar"),
+                ("Résumé", ["Indicateur", "Montant DA"], summary, False)])
+            beep_ok()
+            messagebox.showinfo(t("app_title"),
+                                "تم تصدير التقرير إلى إكسل بنجاح !" if CURRENT_LANG == "ar"
+                                else "Rapport exporté vers Excel avec succès !")
+        except Exception as e:
+            beep_err()
+            messagebox.showerror(t("app_title"), f"Erreur Export Excel : {e}")
+
+    # ==========================================
     # 5. المشتريات واستيراد Excel
     # ==========================================
     def show_purchases(self):
@@ -2220,6 +2515,8 @@ class App(tk.Tk):
                   relief="flat", font=("Segoe UI", 9), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
         tk.Button(bar, text=t("print_purchases_list"), command=self.print_purchases_report, bg="#E8DFD1", fg=BROWN,
                   relief="flat", font=("Segoe UI", 9), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
+        tk.Button(bar, text=t("export_excel"), command=self.export_purchases_excel, bg="#217A4B", fg="white",
+                  relief="flat", font=("Segoe UI", 9, "bold"), padx=10, pady=6, cursor="hand2").pack(side=side, padx=3)
 
         search_frame = tk.Frame(bar, bg=BG)
         search_frame.pack(side="right" if CURRENT_LANG=="fr" else "left", padx=5)
@@ -2826,6 +3123,8 @@ class App(tk.Tk):
                   relief="flat", font=("Segoe UI", 9, "bold"), padx=12, pady=4, cursor="hand2").pack(side=side, padx=8)
         tk.Button(f, text=f"📊 {t('export_csv')}", command=lambda: self.export_csv(start_entry.get(), end_entry.get()),
                   bg="#E8DFD1", fg=BROWN, relief="flat", font=("Segoe UI", 9), padx=10, pady=4, cursor="hand2").pack(side=side, padx=4)
+        tk.Button(f, text=t("export_excel"), command=lambda: self.export_report_excel(start_entry.get(), end_entry.get()),
+                  bg="#217A4B", fg="white", relief="flat", font=("Segoe UI", 9, "bold"), padx=10, pady=4, cursor="hand2").pack(side=side, padx=4)
         generate()
 
     def export_csv(self, a, b):
