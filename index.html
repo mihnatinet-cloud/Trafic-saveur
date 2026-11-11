@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<base target="_top">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,sans-serif; }
+body { background:#F7F3EA; color:#3B1B12; overflow-x:hidden; }
+body.rtl { direction:rtl; text-align:right; }
+body.ltr { direction:ltr; text-align:left; }
+.header { background:linear-gradient(135deg,#3B1B12,#5a2a1a); color:#FFC52E; 
+  padding:15px 25px; display:flex; justify-content:space-between; align-items:center; 
+  box-shadow:0 2px 8px rgba(0,0,0,0.2); flex-wrap:wrap; gap:15px; }
+.header-left h1 { font-size:24px; }
+.header-left .sub { color:#fff; font-size:12px; margin-top:3px; }
+.header-right { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.clock-container { display:flex; align-items:center; gap:12px; 
+  background:rgba(255,255,255,0.1); padding:8px 15px; 
+  border-radius:30px; border:1px solid rgba(233,169,0,0.4); }
+.clock-time { font-size:20px; font-weight:bold; color:#FFC52E; 
+  font-family:'Courier New',monospace; letter-spacing:1px;
+  text-shadow:0 0 10px rgba(255,197,46,0.5); }
+.clock-date { font-size:11px; color:#fff; margin-top:2px; }
+.clock-svg { animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+.lang-btn { background:linear-gradient(135deg,#E9A900,#d49900); color:#3B1B12; 
+  border:2px solid #FFC52E; padding:8px 16px; border-radius:20px;
+  font-weight:bold; font-size:13px; cursor:pointer; transition:all 0.3s; 
+  display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(233,169,0,0.3); }
+.lang-btn:hover { transform:scale(1.05); box-shadow:0 4px 12px rgba(233,169,0,0.5); }
+.nav { background:#E9DFD0; padding:10px 20px; display:flex; gap:8px; flex-wrap:wrap; 
+  border-bottom:2px solid #d4c4a8; }
+.nav button { background:transparent; border:none; color:#3B1B12; padding:10px 16px; 
+  font-size:13px; font-weight:bold; cursor:pointer; border-radius:6px; transition:0.2s; }
+.nav button:hover { background:#f5e8cf; }
+.nav button.active { background:#E9A900; color:#3B1B12; }
+.content { padding:25px; min-height:500px; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); 
+  gap:15px; margin-bottom:25px; }
+.card { background:#fff; border-radius:10px; padding:18px; border-top:4px solid #E9A900; 
+  box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+.card.green { border-color:#26734D; }
+.card.red { border-color:#B33A32; }
+.card.blue { border-color:#2874A6; }
+.card .title { color:#776A62; font-size:12px; font-weight:bold; margin-bottom:8px; }
+.card .value { color:#3B1B12; font-size:20px; font-weight:bold; }
+.section-title { font-size:20px; color:#3B1B12; margin-bottom:15px; 
+  border-bottom:2px solid #E9A900; padding-bottom:8px; 
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+.btn { background:#E9A900; color:#3B1B12; border:none; padding:9px 18px; 
+  border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; transition:0.2s; }
+.btn:hover { background:#d49900; }
+.btn-sm { padding:5px 10px; font-size:12px; }
+.btn-danger { background:#B33A32; color:#fff; }
+.btn-success { background:#26734D; color:#fff; }
+.search-box { margin-bottom:15px; }
+.search-box input { width:100%; padding:12px 15px; font-size:14px; border:2px solid #d4c4a8; 
+  border-radius:8px; background:#fff; transition:0.2s; }
+.search-box input:focus { border-color:#E9A900; outline:none; box-shadow:0 0 0 3px rgba(233,169,0,0.2); }
+table { width:100%; background:#fff; border-collapse:collapse; border-radius:8px; 
+  overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+th { background:#EDE3D2; color:#3B1B12; padding:12px; font-size:13px; text-align:center; }
+td { padding:10px; text-align:center; border-top:1px solid #f0e6d2; font-size:13px; }
+tr:hover { background:#fdf8ec; }
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); 
+  z-index:1000; justify-content:center; align-items:center; }
+.modal-bg.show { display:flex; }
+.modal { background:#F7F3EA; border-radius:10px; padding:25px; width:90%; 
+  max-width:650px; max-height:85vh; overflow-y:auto; }
+.modal h3 { color:#3B1B12; margin-bottom:18px; border-bottom:2px solid #E9A900; padding-bottom:10px; }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#3B1B12; }
+.form-group input, .form-group select, .form-group textarea { 
+  width:100%; padding:9px; border:1px solid #d4c4a8; border-radius:5px; 
+  font-size:13px; background:#fff; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.items-list { background:#fff; border-radius:6px; padding:10px; margin-top:10px; 
+  max-height:200px; overflow-y:auto; }
+.item-row { display:flex; justify-content:space-between; padding:6px; 
+  border-bottom:1px solid #f0e6d2; font-size:13px; }
+.alert { padding:10px; border-radius:6px; margin:10px 0; font-size:13px; }
+.alert-success { background:#d4edda; color:#155724; }
+.alert-danger { background:#f8d7da; color:#721c24; }
+.alert-warning { background:#fff3cd; color:#856404; }
+.total-bar { background:#EDE3D2; padding:12px; border-radius:6px; 
+  display:flex; justify-content:space-between; align-items:center; 
+  margin-top:15px; font-weight:bold; }
+.loader { text-align:center; padding:40px; color:#776A62; }
+.no-results { text-align:center; padding:30px; color:#776A62; font-style:italic; }
+</style>
+</head>
+<body class="rtl">
+
+<div class="header">
+  <div class="header-left">
+    <h1>🍪 <span data-t="app_name">Trafik Saveurs</span></h1>
+    <div class="sub" data-t="app_sub">نظام تسيير تجارة الحلويات والبسكويت بالجملة</div>
+  </div>
+  <div class="header-right">
+    <div class="clock-container">
+      <svg class="clock-svg" width="55" height="55" viewBox="0 0 100 100">
+        <defs><radialGradient id="clockGrad"><stop offset="0%" stop-color="#fff8e0"/>
+          <stop offset="100%" stop-color="#f5e8cf"/></radialGradient></defs>
+        <circle cx="50" cy="50" r="46" fill="url(#clockGrad)" stroke="#FFC52E" stroke-width="3"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#E9A900" stroke-width="1" opacity="0.5"/>
+        ${Array.from({length:12},(_,i)=>{const a=(i*30-90)*Math.PI/180;return `<line x1="${50+38*Math.cos(a)}" y1="${50+38*Math.sin(a)}" x2="${50+43*Math.cos(a)}" y2="${50+43*Math.sin(a)}" stroke="#3B1B12" stroke-width="2"/>`;}).join('')}
+        <line id="hourHand" x1="50" y1="50" x2="50" y2="28" stroke="#3B1B12" stroke-width="4" stroke-linecap="round"/>
+        <line id="minHand" x1="50" y1="50" x2="50" y2="20" stroke="#E9A900" stroke-width="3" stroke-linecap="round"/>
+        <line id="secHand" x1="50" y1="55" x2="50" y2="18" stroke="#B33A32" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="3.5" fill="#3B1B12"/>
+        <circle cx="50" cy="50" r="1.5" fill="#FFC52E"/>
+      </svg>
+      <div>
+        <div class="clock-time" id="clockTime">--:--:--</div>
+        <div class="clock-date" id="clockDate">--</div>
+      </div>
+    </div>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">
+      <span id="langFlag">🇫🇷</span>
+      <span id="langLabel">Français</span>
+    </button>
+  </div>
+</div>
+
+<div class="nav" id="navBar"></div>
+<div class="content" id="content"><div class="loader" data-t="loading">جاري التحميل...</div></div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalContent"></div></div>
+
+<script>
+const translations = {
+  ar: {
+    app_name:'Trafik Saveurs', app_sub:'نظام تسيير تجارة الحلويات والبسكويت بالجملة', loading:'جاري التحميل...',
+    nav:{dashboard:'📊 الرئيسية',products:'📦 المنتجات',sales:'💰 المبيعات',purchases:'🛒 المشتريات',customers:'👥 العملاء',expenses:'💸 المصاريف',reports:'📈 التقارير',backup:'💾 النسخ الاحتياطي',settings:'⚙️ الإعدادات'},
+    dashboard:{title:'لوحة القيادة',subtitle:'نظرة عامة',todaySales:'💰 مبيعات اليوم',todayPaid:'✅ المحصل اليوم',totalProducts:'📦 عدد المنتجات',lowStock:'⚠️ مخزون منخفض',totalDebt:'💳 ديون العملاء',totalCustomers:'👥 عدد العملاء',monthSales:'📈 مبيعات الشهر',monthPurchases:'🛒 مشتريات الشهر',monthExpenses:'💸 مصاريف الشهر',monthProfit:'📊 ربح الشهر',recentSales:'آخر عمليات البيع',lowStockAlert:'⚠️ تنبيه المخزون المنخفض',noOperations:'لا توجد عمليات',stockOk:'✅ جميع المنتجات بحالة جيدة',th:{num:'رقم',date:'التاريخ',customer:'العميل',total:'الإجمالي',paid:'المدفوع',due:'المتبقي',product:'المنتج',stock:'المخزون',min:'الحد الأدنى'}},
+    products:{title:'إدارة المنتجات والمخزون',add:'+ إضافة منتج',edit:'تعديل',delete:'حذف',confirmDelete:'حذف المنتج؟',searchPlaceholder:'🔍 بحث بالاسم أو الباركود أو الصنف...',form:{add:'إضافة منتج',edit:'تعديل منتج',name:'اسم المنتج',category:'الصنف',barcode:'الباركود',unit:'الوحدة',buy:'سعر الشراء',sell:'سعر البيع',stock:'المخزون الحالي',min:'حد التنبيه',expiry:'الصلاحية',save:'💾 حفظ',cancel:'إلغاء',required:'اسم المنتج إجباري'},th:{num:'الرقم',name:'الاسم',cat:'الصنف',buy:'سعر الشراء',sell:'سعر البيع',stock:'المخزون',min:'الحد',exp:'الصلاحية',actions:'إجراءات'},empty:'لا توجد منتجات',deleted:'تم الحذف بنجاح',duplicate:'⚠️ يوجد منتج بنفس الاسم أو الباركود!',forceSave:'هل تريد المتابعة على أي حال؟',noResults:'لا توجد نتائج للبحث'},
+    customers:{title:'إدارة العملاء',add:'+ إضافة عميل',payDebt:'💳 تسجيل تسديد',searchPlaceholder:'🔍 بحث بالاسم أو الهاتف أو العنوان...',form:{add:'إضافة عميل',edit:'تعديل عميل',name:'الاسم',phone:'الهاتف',address:'العنوان',notes:'ملاحظات',save:'💾 حفظ',cancel:'إلغاء',required:'الاسم إجباري'},payForm:{title:'💳 تسجيل تسديد دين',customer:'العميل',amount:'المبلغ',confirm:'تأكيد التسديد',cancel:'إلغاء',noDebt:'لا توجد ديون مستحقة',success:'تم التسديد',invalidAmount:'أدخل مبلغاً صحيحاً'},th:{num:'الرقم',name:'الاسم',phone:'الهاتف',address:'العنوان',debt:'الديون',actions:'إجراءات'},empty:'لا يوجد عملاء',confirmDelete:'حذف العميل؟',deleted:'تم الحذف بنجاح',duplicate:'⚠️ يوجد عميل بنفس الاسم!',noResults:'لا توجد نتائج للبحث'},
+    sales:{title:'سجل المبيعات',add:'+ فاتورة بيع جديدة',searchPlaceholder:'🔍 بحث بالعميل أو رقم الفاتورة...',form:{title:'💰 فاتورة بيع جديدة',customer:'العميل',date:'التاريخ',product:'المنتج',qty:'الكمية',price:'سعر الوحدة',method:'طريقة الدفع',paid:'المبلغ المدفوع',notes:'ملاحظات',addItem:'+ إضافة للفاتورة',save:'💾 حفظ وخصم المخزون',cancel:'إلغاء',cashCustomer:'زبون نقدي',methods:['نقداً','تحويل','آجل','مختلط'],noItems:'أضف منتجاً واحداً على الأقل',emptyQty:'تحقق من الكمية والسعر',overStock:'الكمية أكبر من المخزون المتوفر',noItemsYet:'لم تضف منتجات بعد',success:'تم حفظ الفاتورة رقم'},th:{num:'رقم',date:'التاريخ',customer:'العميل',total:'الإجمالي',paid:'المدفوع',due:'المتبقي',method:'الدفع',actions:'إجراءات'},print:'🖨️ فاتورة',empty:'لا توجد مبيعات',noResults:'لا توجد نتائج للبحث'},
+    purchases:{title:'سجل المشتريات',add:'+ تسجيل شراء',searchPlaceholder:'🔍 بحث بالمورد أو رقم الشراء...',form:{title:'🛒 تسجيل شراء وإدخال مخزون',supplier:'المورد',date:'التاريخ',product:'المنتج',qty:'الكمية',cost:'تكلفة الوحدة',paid:'المبلغ المدفوع',addItem:'+ إضافة',save:'💾 حفظ وتحديث المخزون',cancel:'إلغاء',noItems:'أضف منتجاً',invalidData:'تحقق من البيانات',success:'تم حفظ الشراء رقم'},th:{num:'رقم',date:'التاريخ',supplier:'المورد',total:'الإجمالي',paid:'المدفوع',due:'المتبقي'},empty:'لا توجد مشتريات',noResults:'لا توجد نتائج للبحث'},
+    expenses:{title:'سجل المصاريف اليومية',add:'+ إضافة مصروف',searchPlaceholder:'🔍 بحث بالبيان...',form:{title:'💸 إضافة مصروف',date:'التاريخ',amount:'المبلغ',desc:'البيان',notes:'ملاحظات',save:'💾 حفظ',cancel:'إلغاء',required:'أدخل البيان والمبلغ'},th:{num:'رقم',date:'التاريخ',desc:'البيان',amount:'المبلغ',notes:'ملاحظات',actions:'إجراءات'},empty:'لا توجد مصاريف',confirmDelete:'حذف المصروف؟',deleted:'تم الحذف بنجاح',noResults:'لا توجد نتائج للبحث'},
+    reports:{title:'📈 التقارير والإحصائيات',from:'من تاريخ',to:'إلى تاريخ',show:'📊 عرض التقرير',export:'📥 تصدير CSV',totalSales:'💰 إجمالي المبيعات',totalPaid:'✅ المبالغ المحصلة',totalPurchases:'🛒 المشتريات',totalExpenses:'💸 المصاريف',profit:'📊 الربح التقديري',operations:'📋 عدد العمليات',note:'⚠️ ملاحظة: الربح التقديري = المبيعات - المشتريات - المصاريف.',invalidDates:'أدخل التواريخ'},
+    backup:{title:'💾 النسخ الاحتياطي',exportTitle:'📤 تصدير البيانات للفلاش',exportDesc:'ينشئ ملف JSON يحتوي كل البيانات. يمكنك تحميله للفلاش.',exportBtn:'📤 تصدير الآن',importTitle:'📥 استيراد البيانات من الفلاش',importWarn:'⚠️ تحذير: سيستبدل كل البيانات الحالية!',importBtn:'📥 استيراد',noBackups:'لا توجد نسخ سابقة',download:'📥 تحميل',cardTitle:'نسخة احتياطية سحابية',desc:'نسخة كاملة في Google Drive',btn:'🔄 إنشاء نسخة سحابية',creating:'جاري الإنشاء...',tip:'💡 نصيحة: استخدم التصدير للفلاش يومياً كاحتياط إضافي.'},
+    settings:{title:'⚙️ إعدادات النظام',companyName:'اسم الشركة / المحل',currency:'العملة',phone:'الهاتف',address:'العنوان',userName:'اسم المستخدم (يظهر في الفواتير)',save:'💾 حفظ الإعدادات',saved:'تم الحفظ'},
+    common:{error:'خطأ',chooseFile:'اختر ملفاً أولاً',confirmReplace:'سيتم استبدال كل البيانات الحالية! هل أنت متأكد؟'}
+  },
+  fr: {
+    app_name:'Trafik Saveurs', app_sub:'Système de gestion - Vente de pâtisseries en gros', loading:'Chargement...',
+    nav:{dashboard:'📊 Accueil',products:'📦 Produits',sales:'💰 Ventes',purchases:'🛒 Achats',customers:'👥 Clients',expenses:'💸 Dépenses',reports:'📈 Rapports',backup:'💾 Sauvegarde',settings:'⚙️ Paramètres'},
+    dashboard:{title:'Tableau de bord',subtitle:'Vue d\'ensemble',todaySales:'💰 Ventes du jour',todayPaid:'✅ Encaissé aujourd\'hui',totalProducts:'📦 Nombre de produits',lowStock:'⚠️ Stock faible',totalDebt:'💳 Dettes clients',totalCustomers:'👥 Nombre de clients',monthSales:'📈 Ventes du mois',monthPurchases:'🛒 Achats du mois',monthExpenses:'💸 Dépenses du mois',monthProfit:'📊 Bénéfice du mois',recentSales:'Dernières ventes',lowStockAlert:'⚠️ Alerte stock faible',noOperations:'Aucune opération',stockOk:'✅ Stock OK',th:{num:'N°',date:'Date',customer:'Client',total:'Total',paid:'Payé',due:'Reste',product:'Produit',stock:'Stock',min:'Min'}},
+    products:{title:'Gestion des produits',add:'+ Ajouter',edit:'Modifier',delete:'Supprimer',confirmDelete:'Supprimer le produit ?',searchPlaceholder:'🔍 Rechercher par nom, code-barres, catégorie...',form:{add:'Ajouter produit',edit:'Modifier produit',name:'Nom',category:'Catégorie',barcode:'Code-barres',unit:'Unité',buy:'Prix achat',sell:'Prix vente',stock:'Stock',min:'Seuil',expiry:'Expiration',save:'💾 Enregistrer',cancel:'Annuler',required:'Nom obligatoire'},th:{num:'N°',name:'Nom',cat:'Catégorie',buy:'Prix achat',sell:'Prix vente',stock:'Stock',min:'Seuil',exp:'Expiration',actions:'Actions'},empty:'Aucun produit',deleted:'Supprimé',duplicate:'⚠️ Produit avec même nom/code-barres existe!',forceSave:'Continuer quand même?',noResults:'Aucun résultat'},
+    customers:{title:'Gestion des clients',add:'+ Ajouter',payDebt:'💳 Paiement',searchPlaceholder:'🔍 Rechercher par nom, téléphone, adresse...',form:{add:'Ajouter client',edit:'Modifier client',name:'Nom',phone:'Téléphone',address:'Adresse',notes:'Notes',save:'💾 Enregistrer',cancel:'Annuler',required:'Nom obligatoire'},payForm:{title:'💳 Paiement dette',customer:'Client',amount:'Montant',confirm:'Confirmer',cancel:'Annuler',noDebt:'Aucune dette',success:'Paiement enregistré',invalidAmount:'Montant invalide'},th:{num:'N°',name:'Nom',phone:'Téléphone',address:'Adresse',debt:'Dettes',actions:'Actions'},empty:'Aucun client',confirmDelete:'Supprimer ?',deleted:'Supprimé',duplicate:'⚠️ Client avec même nom existe!',noResults:'Aucun résultat'},
+    sales:{title:'Registre des ventes',add:'+ Nouvelle facture',searchPlaceholder:'🔍 Rechercher par client, N° facture...',form:{title:'💰 Nouvelle facture',customer:'Client',date:'Date',product:'Produit',qty:'Quantité',price:'Prix unitaire',method:'Paiement',paid:'Montant payé',notes:'Notes',addItem:'+ Ajouter',save:'💾 Enregistrer',cancel:'Annuler',cashCustomer:'Client cash',methods:['Espèces','Virement','Crédit','Mixte'],noItems:'Ajoutez au moins un produit',emptyQty:'Vérifiez quantité/prix',overStock:'Stock insuffisant',noItemsYet:'Aucun produit',success:'Facture N°'},th:{num:'N°',date:'Date',customer:'Client',total:'Total',paid:'Payé',due:'Reste',method:'Paiement',actions:'Actions'},print:'🖨️ Facture',empty:'Aucune vente',noResults:'Aucun résultat'},
+    purchases:{title:'Registre des achats',add:'+ Enregistrer',searchPlaceholder:'🔍 Rechercher par fournisseur, N° achat...',form:{title:'🛒 Enregistrer achat',supplier:'Fournisseur',date:'Date',product:'Produit',qty:'Quantité',cost:'Coût',paid:'Payé',addItem:'+ Ajouter',save:'💾 Enregistrer',cancel:'Annuler',noItems:'Ajoutez un produit',invalidData:'Données invalides',success:'Achat N°'},th:{num:'N°',date:'Date',supplier:'Fournisseur',total:'Total',paid:'Payé',due:'Reste'},empty:'Aucun achat',noResults:'Aucun résultat'},
+    expenses:{title:'Dépenses quotidiennes',add:'+ Ajouter',searchPlaceholder:'🔍 Rechercher par description...',form:{title:'💸 Ajouter dépense',date:'Date',amount:'Montant',desc:'Description',notes:'Notes',save:'💾 Enregistrer',cancel:'Annuler',required:'Description et montant requis'},th:{num:'N°',date:'Date',desc:'Description',amount:'Montant',notes:'Notes',actions:'Actions'},empty:'Aucune dépense',confirmDelete:'Supprimer ?',deleted:'Supprimé',noResults:'Aucun résultat'},
+    reports:{title:'📈 Rapports',from:'Du',to:'Au',show:'📊 Afficher',export:'📥 Export CSV',totalSales:'💰 Total ventes',totalPaid:'✅ Encaissé',totalPurchases:'🛒 Achats',totalExpenses:'💸 Dépenses',profit:'📊 Bénéfice',operations:'📋 Opérations',note:'⚠️ Bénéfice = Ventes - Achats - Dépenses.',invalidDates:'Entrez les dates'},
+    backup:{title:'💾 Sauvegarde',exportTitle:'📤 Exporter vers USB',exportDesc:'Crée un fichier JSON téléchargeable.',exportBtn:'📤 Exporter',importTitle:'📥 Importer depuis USB',importWarn:'⚠️ Remplace toutes les données!',importBtn:'📥 Importer',noBackups:'Aucune sauvegarde',download:'📥 Télécharger',cardTitle:'Sauvegarde cloud',desc:'Copie complète dans Google Drive',btn:'🔄 Créer sauvegarde cloud',creating:'Création...',tip:'💡 Exportez quotidiennement vers USB.'},
+    settings:{title:'⚙️ Paramètres',companyName:'Nom entreprise',currency:'Devise',phone:'Téléphone',address:'Adresse',userName:'Nom utilisateur (factures)',save:'💾 Enregistrer',saved:'Enregistré'},
+    common:{error:'Erreur',chooseFile:'Choisissez un fichier',confirmReplace:'Remplacer toutes les données ?'}
+  }
+};
+
+let currentLang = localStorage.getItem('trafik_lang') || 'ar';
+let currentSection = 'dashboard';
+const content = document.getElementById('content');
+const modalBg = document.getElementById('modalBg');
+const modalContent = document.getElementById('modalContent');
+
+function t(path) {
+  const keys = path.split('.');
+  let val = translations[currentLang];
+  for (const k of keys) {
+    if (val && val[k] !== undefined) val = val[k];
+    else return path;
+  }
+  return val;
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'ar' ? 'fr' : 'ar';
+  localStorage.setItem('trafik_lang', currentLang);
+  applyLang();
+  const activeBtn = document.querySelector('.nav button.active');
+  if (activeBtn) activeBtn.click();
+}
+
+function applyLang() {
+  const isAr = currentLang === 'ar';
+  document.body.className = isAr ? 'rtl' : 'ltr';
+  document.documentElement.lang = currentLang;
+  document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+  document.getElementById('langFlag').textContent = isAr ? '🇫🇷' : '🇸🇦';
+  document.getElementById('langLabel').textContent = isAr ? 'Français' : 'العربية';
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const key = el.getAttribute('data-t');
+    el.textContent = t(key);
+  });
+  renderNav();
+}
+
+function renderNav() {
+  const nav = document.getElementById('navBar');
+  const sections = ['dashboard','products','sales','purchases','customers','expenses','reports','backup','settings'];
+  nav.innerHTML = sections.map(s => 
+    `<button class="${s===currentSection?'active':''}" onclick="showSection('${s}',this)">${t('nav.'+s)}</button>`
+  ).join('');
+}
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = `${h}:${m}:${s}`;
+  const isAr = currentLang === 'ar';
+  document.getElementById('clockDate').textContent = now.toLocaleDateString(isAr?'ar-DZ':'fr-FR', {
+    weekday:'long', day:'numeric', month:'long', year:'numeric'
+  });
+  const hours = now.getHours() % 12;
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  setHand('hourHand', (hours*30)+(minutes*0.5), 22);
+  setHand('minHand', minutes*6, 30);
+  setHand('secHand', seconds*6, 33);
+}
+
+function setHand(id, angle, length) {
+  const rad = (angle - 90) * Math.PI / 180;
+  const hand = document.getElementById(id);
+  if (hand) {
+    hand.setAttribute('x2', 50 + length * Math.cos(rad));
+    hand.setAttribute('y2', 50 + length * Math.sin(rad));
+  }
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+function showSection(name, btn) {
+  currentSection = name;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active'); else renderNav();
+  content.innerHTML = `<div class="loader">${t('loading')}</div>`;
+  const funcs = {
+    dashboard:loadDashboard, products:loadProducts, sales:loadSales,
+    purchases:loadPurchases, customers:loadCustomers, expenses:loadExpenses,
+    reports:loadReports, backup:loadBackup, settings:loadSettings
+  };
+  try { funcs[name](); } catch(e) { content.innerHTML = `<div class="alert alert-danger">${t('common.error')}: ${e.message}</div>`; }
+}
+
+function openModal(html) { modalContent.innerHTML = html; modalBg.classList.add('show'); }
+function closeModal() { modalBg.classList.remove('show'); }
+modalBg.onclick = e => { if(e.target===modalBg) closeModal(); };
+
+function call(fn, data, onSuccess) {
+  google.script.run
+    .withSuccessHandler(onSuccess)
+    .withFailureHandler(e => {
+      content.innerHTML = `<div class="alert alert-danger">${t('common.error')}: ${e.message}</div>`;
+    })[fn](data);
+}
+
+// ===== لوحة التحكم =====
+function loadDashboard() {
+  call('getDashboard', undefined, d => {
+    const th = t('dashboard.th');
+    content.innerHTML = `
+      <div class="section-title">${t('dashboard.title')} <span style="font-size:13px;color:#776A62;">${t('dashboard.subtitle')}</span></div>
+      <div class="cards">
+        <div class="card"><div class="title">${t('dashboard.todaySales')}</div><div class="value">${d.todaySales}</div></div>
+        <div class="card green"><div class="title">${t('dashboard.todayPaid')}</div><div class="value">${d.todayPaid}</div></div>
+        <div class="card blue"><div class="title">${t('dashboard.totalProducts')}</div><div class="value">${d.totalProducts}</div></div>
+        <div class="card red"><div class="title">${t('dashboard.lowStock')}</div><div class="value">${d.lowStockCount}</div></div>
+        <div class="card red"><div class="title">${t('dashboard.totalDebt')}</div><div class="value">${d.totalDebt}</div></div>
+        <div class="card"><div class="title">${t('dashboard.totalCustomers')}</div><div class="value">${d.totalCustomers}</div></div>
+        <div class="card green"><div class="title">${t('dashboard.monthSales')}</div><div class="value">${d.monthSales}</div></div>
+        <div class="card"><div class="title">${t('dashboard.monthPurchases')}</div><div class="value">${d.monthPurchases}</div></div>
+        <div class="card"><div class="title">${t('dashboard.monthExpenses')}</div><div class="value">${d.monthExpenses}</div></div>
+        <div class="card green"><div class="title">${t('dashboard.monthProfit')}</div><div class="value">${d.monthProfit}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div class="section-title">${t('dashboard.recentSales')}</div>
+          <table><thead><tr><th>${th.num}</th><th>${th.date}</th><th>${th.customer}</th><th>${th.total}</th><th>${th.paid}</th><th>${th.due}</th></tr></thead>
+          <tbody>${d.recentSales.map(s=>`<tr><td>${s.id}</td><td>${s.date}</td><td>${s.customer}</td><td>${s.total}</td><td>${s.paid}</td><td>${s.due}</td></tr>`).join('')||`<tr><td colspan="6">${t('dashboard.noOperations')}</td></tr>`}</tbody></table>
+        </div>
+        <div>
+          <div class="section-title">${t('dashboard.lowStockAlert')}</div>
+          <table><thead><tr><th>${th.product}</th><th>${th.stock}</th><th>${th.min}</th></tr></thead>
+          <tbody>${d.lowStockItems.map(p=>`<tr><td>${p.name}</td><td style="color:#B33A32;font-weight:bold;">${p.stock}</td><td>${p.min}</td></tr>`).join('')||`<tr><td colspan="3">${t('dashboard.stockOk')}</td></tr>`}</tbody></table>
+        </div>
+      </div>`;
+  });
+}
+
+// ===== المنتجات مع البحث =====
+function loadProducts() {
+  content.innerHTML = `
+    <div class="section-title">${t('products.title')}<button class="btn" onclick="productForm()">${t('products.add')}</button></div>
+    <div class="search-box">
+      <input type="text" id="searchProduct" placeholder="${t('products.searchPlaceholder')}" oninput="searchProductsLive()">
+    </div>
+    <div id="productsList"></div>`;
+  call('getProducts', undefined, list => renderProductsList(list));
+}
+
+function searchProductsLive() {
+  const query = document.getElementById('searchProduct').value;
+  call('searchProducts', query, list => renderProductsList(list));
+}
+
+function renderProductsList(list) {
+  const th = t('products.th');
+  const noResults = list.length === 0 && document.getElementById('searchProduct')?.value ? 
+    `<tr><td colspan="9" class="no-results">${t('products.noResults')}</td></tr>` : '';
+  document.getElementById('productsList').innerHTML = `
+    <table><thead><tr><th>${th.num}</th><th>${th.name}</th><th>${th.cat}</th><th>${th.buy}</th><th>${th.sell}</th><th>${th.stock}</th><th>${th.min}</th><th>${th.exp}</th><th>${th.actions}</th></tr></thead>
+    <tbody>${list.map(p=>`<tr><td>${p.id}</td><td>${p.name}</td><td>${p.category||'-'}</td><td>${p.buy}</td><td>${p.sell}</td><td style="color:${p.stock<=p.min?'#B33A32':'#26734D'};font-weight:bold;">${p.stock}</td><td>${p.min}</td><td>${p.expiry||'-'}</td><td><button class="btn btn-sm" onclick='productForm(${JSON.stringify(p)})'>${t('products.edit')}</button> <button class="btn btn-sm btn-danger" onclick="delProduct(${p.id})">${t('products.delete')}</button></td></tr>`).join('')||noResults||`<tr><td colspan="9">${t('products.empty')}</td></tr>`}</tbody></table>`;
+}
+
+function productForm(p={}) {
+  const f = t('products.form');
+  openModal(`
+    <h3>${p.id?f.edit:f.add}</h3>
+    <div class="form-row">
+      <div class="form-group"><label>${f.name} *</label><input id="p_name" value="${p.name||''}"></div>
+      <div class="form-group"><label>${f.category}</label><input id="p_cat" value="${p.category||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>${f.barcode}</label><input id="p_bar" value="${p.barcode||''}"></div>
+      <div class="form-group"><label>${f.unit}</label><input id="p_unit" value="${p.unit||'علبة'}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>${f.buy}</label><input id="p_buy" type="number" step="0.01" value="${p.rawBuy||0}"></div>
+      <div class="form-group"><label>${f.sell}</label><input id="p_sell" type="number" step="0.01" value="${p.rawSell||0}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>${f.stock}</label><input id="p_stock" type="number" step="0.01" value="${p.stock||0}"></div>
+      <div class="form-group"><label>${f.min}</label><input id="p_min" type="number" step="0.01" value="${p.min||0}"></div>
+    </div>
+    <div class="form-group"><label>${f.expiry}</label><input id="p_exp" type="date" value="${p.expiry||''}"></div>
+    <div style="display:flex;gap:10px;margin-top:15px;">
+      <button class="btn btn-success" onclick='saveProduct(${p.id||"null"})'>${f.save}</button>
+      <button class="btn" onclick="closeModal()">${f.cancel}</button>
+    </div>`);
+}
+
+function saveProduct(id) {
+  const f = t('products.form');
+  const data = {id:id, name:document.getElementById('p_name').value, category:document.getElementById('p_cat').value,
+    barcode:document.getElementById('p_bar').value, expiry:document.getElementById('p_exp').value,
+    unit:document.getElementById('p_unit').value,
+    buy:document.getElementById('p_buy').value, sell:document.getElementById('p_sell').value,
+    stock:document.getElementById('p_stock').value, min:document.getElementById('p_min').value};
+  if(!data.name) { alert(f.required); return; }
+  
+  google.script.run
+    .withSuccessHandler(result => {
+      if (result.error) {
+        if (confirm(result.message + '\n\n' + t('products.forceSave'))) {
+          call('saveProductWithoutCheck', data, ()=>{closeModal();loadProducts();});
+        }
+      } else {
+        closeModal();
+        loadProducts();
+      }
+    })
+    .saveProduct(data);
+}
+
+function delProduct(id) { 
+  if(confirm(t('products.confirmDelete'))) {
+    call('deleteProduct', id, (msg)=>{ alert(msg); loadProducts(); });
+  } 
+}
+
+// ===== العملاء مع البحث =====
+function loadCustomers() {
+  content.innerHTML = `
+    <div class="section-title">${t('customers.title')}
+      <div><button class="btn" onclick="customerForm()">${t('customers.add')}</button> <button class="btn btn-success" onclick="payDebtForm()">${t('customers.payDebt')}</button></div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchCustomer" placeholder="${t('customers.searchPlaceholder')}" oninput="searchCustomersLive()">
+    </div>
+    <div id="customersList"></div>`;
+  call('getCustomers', undefined, list => renderCustomersList(list));
+}
+
+function searchCustomersLive() {
+  const query = document.getElementById('searchCustomer').value;
+  call('searchCustomers', query, list => renderCustomersList(list));
+}
+
+function renderCustomersList(list) {
+  const th = t('customers.th');
+  const noResults = list.length === 0 && document.getElementById('searchCustomer')?.value ? 
+    `<tr><td colspan="6" class="no-results">${t('customers.noResults')}</td></tr>` : '';
+  document.getElementById('customersList').innerHTML = `
+    <table><thead><tr><th>${th.num}</th><th>${th.name}</th><th>${th.phone}</th><th>${th.address}</th><th>${th.debt}</th><th>${th.actions}</th></tr></thead>
+    <tbody>${list.map(c=>`<tr><td>${c.id}</td><td>${c.name}</td><td>${c.phone||'-'}</td><td>${c.address||'-'}</td><td style="color:${parseFloat(c.debt)>0?'#B33A32':'#26734D'};font-weight:bold;">${c.debt}</td><td><button class="btn btn-sm" onclick='customerForm(${JSON.stringify(c)})'>${t('products.edit')}</button> <button class="btn btn-sm btn-danger" onclick="delCustomer(${c.id})">${t('products.delete')}</button></td></tr>`).join('')||noResults||`<tr><td colspan="6">${t('customers.empty')}</td></tr>`}</tbody></table>`;
+}
+
+function customerForm(c={}) {
+  const f = t('customers.form');
+  openModal(`
+    <h3>${c.id?f.edit:f.add}</h3>
+    <div class="form-group"><label>${f.name} *</label><input id="c_name" value="${c.name||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>${f.phone}</label><input id="c_phone" value="${c.phone||''}"></div>
+      <div class="form-group"><label>${f.address}</label><input id="c_addr" value="${c.address||''}"></div>
+    </div>
+    <div class="form-group"><label>${f.notes}</label><textarea id="c_notes" rows="2">${c.notes||''}</textarea></div>
+    <div style="display:flex;gap:10px;margin-top:15px;">
+      <button class="btn btn-success" onclick='saveCustomer(${c.id||"null"})'>${f.save}</button>
+      <button class="btn" onclick="closeModal()">${f.cancel}</button>
+    </div>`);
+}
+
+function saveCustomer(id) {
+  const f = t('customers.form');
+  const data = {id:id, name:document.getElementById('c_name').value, phone:document.getElementById('c_phone').value,
+    address:document.getElementById('c_addr').value, notes:document.getElementById('c_notes').value};
+  if(!data.name) { alert(f.required); return; }
+  
+  google.script.run
+    .withSuccessHandler(result => {
+      if (result.error) {
+        if (confirm(result.message + '\n\n' + t('products.forceSave'))) {
+          call('saveCustomerWithoutCheck', data, ()=>{closeModal();loadCustomers();});
+        }
+      } else {
+        closeModal();
+        loadCustomers();
+      }
+    })
+    .saveCustomer(data);
+}
+
+function delCustomer(id) { 
+  if(confirm(t('customers.confirmDelete'))) {
+    call('deleteCustomer', id, (msg)=>{ alert(msg); loadCustomers(); });
+  } 
+}
+
+function payDebtForm() {
+  const f = t('customers.payForm');
+  call('getCustomers', undefined, list => {
+    const debtors = list.filter(c => parseFloat(c.debt.replace(/[^\d.-]/g,'')) > 0);
+    if(!debtors.length) { alert(f.noDebt); return; }
+    openModal(`
+      <h3>${f.title}</h3>
+      <div class="form-group"><label>${f.customer}</label><select id="pd_cust">${debtors.map(c=>`<option value="${c.name}">${c.name} - ${c.debt}</option>`).join('')}</select></div>
+      <div class="form-group"><label>${f.amount}</label><input id="pd_amount" type="number" step="0.01"></div>
+      <button class="btn btn-success" onclick="doPayDebt()">${f.confirm}</button>
+      <button class="btn" onclick="closeModal()">${f.cancel}</button>`);
+  });
+}
+
+function doPayDebt() {
+  const f = t('customers.payForm');
+  const name = document.getElementById('pd_cust').value;
+  const amount = document.getElementById('pd_amount').value;
+  if(!amount || amount<=0) { alert(f.invalidAmount); return; }
+  call('payDebt', {customerName:name, amount:amount}, ()=>{closeModal();loadCustomers();alert(f.success);});
+}
+
+// ===== المبيعات مع البحث =====
+let saleItems = [];
+function loadSales() {
+  content.innerHTML = `
+    <div class="section-title">${t('sales.title')}<button class="btn" onclick="saleForm()">${t('sales.add')}</button></div>
+    <div class="search-box">
+      <input type="text" id="searchSale" placeholder="${t('sales.searchPlaceholder')}" oninput="searchSalesLive()">
+    </div>
+    <div id="salesList"></div>`;
+  call('getSales', undefined, list => renderSalesList(list));
+}
+
+function searchSalesLive() {
+  const query = document.getElementById('searchSale').value;
+  call('searchSales', query, list => renderSalesList(list));
+}
+
+function renderSalesList(list) {
+  const th = t('sales.th');
+  const noResults = list.length === 0 && document.getElementById('searchSale')?.value ? 
+    `<tr><td colspan="8" class="no-results">${t('sales.noResults')}</td></tr>` : '';
+  document.getElementById('salesList').innerHTML = `
+    <table><thead><tr><th>${th.num}</th><th>${th.date}</th><th>${th.customer}</th><th>${th.total}</th><th>${th.paid}</th><th>${th.due}</th><th>${th.method}</th><th>${th.actions}</th></tr></thead>
+    <tbody>${list.map(s=>`<tr><td>${s.id}</td><td>${s.date}</td><td>${s.customer}</td><td>${s.total}</td><td>${s.paid}</td><td style="color:#B33A32;">${s.due}</td><td>${s.method}</td><td><button class="btn btn-sm btn-success" onclick="printInvoice(${s.id})">${t('sales.print')}</button></td></tr>`).join('')||noResults||`<tr><td colspan="8">${t('sales.empty')}</td></tr>`}</tbody></table>`;
+}
+
+function saleForm() {
+  saleItems = [];
+  const f = t('sales.form');
+  google.script.run
+    .withSuccessHandler(res => {
+      const prods = res.products, custs = res.customers;
+      openModal(`
+        <h3>${f.title}</h3>
+        <div class="form-row">
+          <div class="form-group"><label>${f.customer}</label><select id="s_cust"><option value="${f.cashCustomer}">${f.cashCustomer}</option>${custs.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label>${f.date}</label><input id="s_date" type="date" value="${new Date().toISOString().substring(0,10)}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>${f.product}</label><select id="s_prod" onchange="setSalePrice()">${prods.map(p=>`<option value="${p.id}" data-price="${p.rawSell}" data-stock="${p.stock}" data-name="${p.name}">${p.name} (${p.stock})</option>`).join('')}</select></div>
+          <div class="form-group"><label>${f.qty}</label><input id="s_qty" type="number" step="0.01" value="1" min="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>${f.price}</label><input id="s_price" type="number" step="0.01"></div>
+          <div class="form-group"><label>${f.method}</label><select id="s_method">${f.methods.map(m=>`<option>${m}</option>`).join('')}</select></div>
+        </div>
+        <button class="btn" onclick="addSaleItem()">${f.addItem}</button>
+        <div class="items-list" id="saleItemsList"></div>
+        <div class="form-row" style="margin-top:10px;">
+          <div class="form-group"><label>${f.paid}</label><input id="s_paid" type="number" step="0.01" value="0"></div>
+          <div class="form-group"><label>${f.notes}</label><input id="s_notes"></div>
+        </div>
+        <div class="total-bar"><span>${t('dashboard.th.total')}:</span><span id="saleTotal">0.00</span></div>
+        <div style="display:flex;gap:10px;margin-top:15px;">
+          <button class="btn btn-success" onclick="saveSale()">${f.save}</button>
+          <button class="btn" onclick="closeModal()">${f.cancel}</button>
+        </div>`);
+      setSalePrice();
+    })
+    .withFailureHandler(e => alert(e.message))
+    .getProductsAndCustomers();
+}
+
+function setSalePrice() {
+  const sel = document.getElementById('s_prod');
+  document.getElementById('s_price').value = sel.options[sel.selectedIndex].dataset.price;
+}
+
+function addSaleItem() {
+  const f = t('sales.form');
+  const sel = document.getElementById('s_prod');
+  const id = sel.value, name = sel.options[sel.selectedIndex].dataset.name;
+  const qty = parseFloat(document.getElementById('s_qty').value);
+  const price = parseFloat(document.getElementById('s_price').value);
+  const stock = parseFloat(sel.options[sel.selectedIndex].dataset.stock);
+  if(!qty||qty<=0||!price) { alert(f.emptyQty); return; }
+  const existing = saleItems.find(i=>i.productId==id);
+  const totalQty = (existing?existing.qty:0) + qty;
+  if(totalQty > stock) { alert(f.overStock); return; }
+  if(existing) existing.qty = totalQty;
+  else saleItems.push({productId:id, name, qty, price});
+  renderSaleItems();
+}
+
+function renderSaleItems() {
+  const f = t('sales.form');
+  let total = 0;
+  const html = saleItems.map((it,i)=>{
+    const sub = it.qty*it.price; total += sub;
+    return `<div class="item-row"><span>${it.name} × ${it.qty} = ${sub.toFixed(2)}</span><button class="btn btn-sm btn-danger" onclick="removeSaleItem(${i})">×</button></div>`;
+  }).join('');
+  document.getElementById('saleItemsList').innerHTML = html || `<div style="padding:10px;color:#776A62;">${f.noItemsYet}</div>`;
+  document.getElementById('saleTotal').innerText = total.toFixed(2);
+}
+
+function removeSaleItem(i) { saleItems.splice(i,1); renderSaleItems(); }
+
+function saveSale() {
+  const f = t('sales.form');
+  if(!saleItems.length) { alert(f.noItems); return; }
+  const data = {
+    date: document.getElementById('s_date').value,
+    customer: document.getElementById('s_cust').value,
+    paid: document.getElementById('s_paid').value,
+    method: document.getElementById('s_method').value,
+    notes: document.getElementById('s_notes').value,
+    items: JSON.stringify(saleItems)
+  };
+  google.script.run
+    .withSuccessHandler(r=>{ closeModal(); alert(`${f.success} ${r.id}`); loadSales(); })
+    .withFailureHandler(e=>alert(e.message))
+    .saveSale(data);
+}
+
+function printInvoice(id) {
+  google.script.run
+    .withSuccessHandler(html=>{ const w = window.open('','_blank'); w.document.write(html); w.document.close(); })
+    .generateInvoice(id);
+}
+
+// ===== المشتريات مع البحث =====
+let purchaseItems = [];
+function loadPurchases() {
+  content.innerHTML = `
+    <div class="section-title">${t('purchases.title')}<button class="btn" onclick="purchaseForm()">${t('purchases.add')}</button></div>
+    <div class="search-box">
+      <input type="text" id="searchPurchase" placeholder="${t('purchases.searchPlaceholder')}" oninput="searchPurchasesLive()">
+    </div>
+    <div id="purchasesList"></div>`;
+  call('getPurchases', undefined, list => renderPurchasesList(list));
+}
+
+function searchPurchasesLive() {
+  const query = document.getElementById('searchPurchase').value;
+  call('searchPurchases', query, list => renderPurchasesList(list));
+}
+
+function renderPurchasesList(list) {
+  const th = t('purchases.th');
+  const noResults = list.length === 0 && document.getElementById('searchPurchase')?.value ? 
+    `<tr><td colspan="6" class="no-results">${t('purchases.noResults')}</td></tr>` : '';
+  document.getElementById('purchasesList').innerHTML = `
+    <table><thead><tr><th>${th.num}</th><th>${th.date}</th><th>${th.supplier}</th><th>${th.total}</th><th>${th.paid}</th><th>${th.due}</th></tr></thead>
+    <tbody>${list.map(p=>`<tr><td>${p.id}</td><td>${p.date}</td><td>${p.supplier}</td><td>${p.total}</td><td>${p.paid}</td><td style="color:#B33A32;">${p.due}</td></tr>`).join('')||noResults||`<tr><td colspan="6">${t('purchases.empty')}</td></tr>`}</tbody></table>`;
+}
+
+function purchaseForm() {
+  purchaseItems = [];
+  const f = t('purchases.form');
+  call('getProducts', undefined, prods => {
+    openModal(`
+      <h3>${f.title}</h3>
+      <div class="form-row">
+        <div class="form-group"><label>${f.supplier}</label><input id="pu_supp"></div>
+        <div class="form-group"><label>${f.date}</label><input id="pu_date" type="date" value="${new Date().toISOString().substring(0,10)}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>${f.product}</label><select id="pu_prod" onchange="setPurchCost()">${prods.map(p=>`<option value="${p.id}" data-cost="${p.rawBuy}" data-name="${p.name}">${p.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label>${f.qty}</label><input id="pu_qty" type="number" step="0.01" value="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>${f.cost}</label><input id="pu_cost" type="number" step="0.01"></div>
+        <div class="form-group"><label>${f.paid}</label><input id="pu_paid" type="number" step="0.01" value="0"></div>
+      </div>
+      <button class="btn" onclick="addPurchaseItem()">${f.addItem}</button>
+      <div class="items-list" id="purchItemsList"></div>
+      <div class="total-bar"><span>${t('dashboard.th.total')}:</span><span id="purchTotal">0.00</span></div>
+      <div style="display:flex;gap:10px;margin-top:15px;">
+        <button class="btn btn-success" onclick="savePurchase()">${f.save}</button>
+        <button class="btn" onclick="closeModal()">${f.cancel}</button>
+      </div>`);
+    setPurchCost();
+  });
+}
+
+function setPurchCost() {
+  const sel = document.getElementById('pu_prod');
+  document.getElementById('pu_cost').value = sel.options[sel.selectedIndex].dataset.cost;
+}
+
+function addPurchaseItem() {
+  const f = t('purchases.form');
+  const sel = document.getElementById('pu_prod');
+  const id = sel.value, name = sel.options[sel.selectedIndex].dataset.name;
+  const qty = parseFloat(document.getElementById('pu_qty').value);
+  const cost = parseFloat(document.getElementById('pu_cost').value);
+  if(!qty||!cost) { alert(f.invalidData); return; }
+  purchaseItems.push({productId:id, name, qty, cost});
+  renderPurchItems();
+}
+
+function renderPurchItems() {
+  let total = 0;
+  const html = purchaseItems.map((it,i)=>{
+    const sub = it.qty*it.cost; total += sub;
+    return `<div class="item-row"><span>${it.name} × ${it.qty} = ${sub.toFixed(2)}</span><button class="btn btn-sm btn-danger" onclick="removePurchItem(${i})">×</button></div>`;
+  }).join('');
+  document.getElementById('purchItemsList').innerHTML = html;
+  document.getElementById('purchTotal').innerText = total.toFixed(2);
+}
+
+function removePurchItem(i) { purchaseItems.splice(i,1); renderPurchItems(); }
+
+function savePurchase() {
+  const f = t('purchases.form');
+  if(!purchaseItems.length) { alert(f.noItems); return; }
+  const data = {
+    date: document.getElementById('pu_date').value,
+    supplier: document.getElementById('pu_supp').value,
+    paid: document.getElementById('pu_paid').value,
+    items: JSON.stringify(purchaseItems)
+  };
+  google.script.run
+    .withSuccessHandler(r=>{ closeModal(); alert(`${f.success} ${r.id}`); loadPurchases(); })
+    .withFailureHandler(e=>alert(e.message))
+    .savePurchase(data);
+}
+
+// ===== المصاريف مع البحث =====
+function loadExpenses() {
+  content.innerHTML = `
+    <div class="section-title">${t('expenses.title')}<button class="btn" onclick="expenseForm()">${t('expenses.add')}</button></div>
+    <div class="search-box">
+      <input type="text" id="searchExpense" placeholder="${t('expenses.searchPlaceholder')}" oninput="searchExpensesLive()">
+    </div>
+    <div id="expensesList"></div>`;
+  call('getExpenses', undefined, list => renderExpensesList(list));
+}
+
+function searchExpensesLive() {
+  const query = document.getElementById('searchExpense').value;
+  call('searchExpenses', query, list => renderExpensesList(list));
+}
+
+function renderExpensesList(list) {
+  const th = t('expenses.th');
+  const noResults = list.length === 0 && document.getElementById('searchExpense')?.value ? 
+    `<tr><td colspan="6" class="no-results">${t('expenses.noResults')}</td></tr>` : '';
+  document.getElementById('expensesList').innerHTML = `
+    <table><thead><tr><th>${th.num}</th><th>${th.date}</th><th>${th.desc}</th><th>${th.amount}</th><th>${th.notes}</th><th>${th.actions}</th></tr></thead>
+    <tbody>${list.map(e=>`<tr><td>${e.id}</td><td>${e.date}</td><td>${e.title}</td><td>${e.amount}</td><td>${e.notes||'-'}</td><td><button class="btn btn-sm btn-danger" onclick="delExpense(${e.id})">${t('products.delete')}</button></td></tr>`).join('')||noResults||`<tr><td colspan="6">${t('expenses.empty')}</td></tr>`}</tbody></table>`;
+}
+
+function expenseForm() {
+  const f = t('expenses.form');
+  openModal(`
+    <h3>${f.title}</h3>
+    <div class="form-row">
+      <div class="form-group"><label>${f.date}</label><input id="e_date" type="date" value="${new Date().toISOString().substring(0,10)}"></div>
+      <div class="form-group"><label>${f.amount}</label><input id="e_amount" type="number" step="0.01"></div>
+    </div>
+    <div class="form-group"><label>${f.desc} *</label><input id="e_title"></div>
+    <div class="form-group"><label>${f.notes}</label><input id="e_notes"></div>
+    <button class="btn btn-success" onclick="saveExpense()">${f.save}</button>
+    <button class="btn" onclick="closeModal()">${f.cancel}</button>`);
+}
+
+function saveExpense() {
+  const f = t('expenses.form');
+  const data = {date:document.getElementById('e_date').value, title:document.getElementById('e_title').value,
+    amount:document.getElementById('e_amount').value, notes:document.getElementById('e_notes').value};
+  if(!data.title||!data.amount) { alert(f.required); return; }
+  call('saveExpense', data, ()=>{closeModal();loadExpenses();});
+}
+
+function delExpense(id) { 
+  if(confirm(t('expenses.confirmDelete'))) {
+    call('deleteExpense', id, (msg)=>{ alert(msg); loadExpenses(); });
+  } 
+}
+
+// ===== التقارير =====
+function loadReports() {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().substring(0,10);
+  const todayStr = today.toISOString().substring(0,10);
+  content.innerHTML = `
+    <div class="section-title">${t('reports.title')}</div>
+    <div class="card" style="max-width:800px;margin-bottom:20px;">
+      <div class="form-row">
+        <div class="form-group"><label>${t('reports.from')}</label><input id="r_start" type="date" value="${firstDay}"></div>
+        <div class="form-group"><label>${t('reports.to')}</label><input id="r_end" type="date" value="${todayStr}"></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn" onclick="showReport()">${t('reports.show')}</button>
+        <button class="btn btn-success" onclick="exportReportCSV()">${t('reports.export')}</button>
+      </div>
+    </div>
+    <div id="reportResult"></div>`;
+  showReport();
+}
+
+function showReport() {
+  const start = document.getElementById('r_start').value;
+  const end = document.getElementById('r_end').value;
+  if(!start||!end) { alert(t('reports.invalidDates')); return; }
+  call('getReport', {startDate:start, endDate:end}, r => {
+    document.getElementById('reportResult').innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="title">${t('reports.totalSales')}</div><div class="value">${r.totalSales}</div></div>
+        <div class="card green"><div class="title">${t('reports.totalPaid')}</div><div class="value">${r.totalPaid}</div></div>
+        <div class="card"><div class="title">${t('reports.totalPurchases')}</div><div class="value">${r.totalPurchases}</div></div>
+        <div class="card"><div class="title">${t('reports.totalExpenses')}</div><div class="value">${r.totalExpenses}</div></div>
+        <div class="card ${parseFloat(r.profit.replace(/[^\d.-]/g,''))>=0?'green':'red'}">
+          <div class="title">${t('reports.profit')}</div><div class="value">${r.profit}</div></div>
+        <div class="card blue"><div class="title">${t('reports.operations')}</div><div class="value">${r.salesCount + r.purchasesCount + r.expensesCount}</div></div>
+      </div>
+      <div class="alert alert-warning">${t('reports.note')}</div>`;
+  });
+}
+
+function exportReportCSV() {
+  const start = document.getElementById('r_start').value;
+  const end = document.getElementById('r_end').value;
+  google.script.run
+    .withSuccessHandler(csv => {
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `rapport_${start}_${end}.csv`; a.click();
+    })
+    .exportCSV({startDate:start, endDate:end});
+}
+
+// ===== النسخ الاحتياطي =====
+function loadBackup() {
+  content.innerHTML = `
+    <div class="section-title">${t('backup.title')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1000px;">
+      <div class="card">
+        <div class="title" style="font-size:16px;">${t('backup.exportTitle')}</div>
+        <p style="margin:10px 0;color:#776A62;font-size:13px;">${t('backup.exportDesc')}</p>
+        <button class="btn btn-success" onclick="doExport()">${t('backup.exportBtn')}</button>
+        <div id="exportResult" style="margin-top:15px;"></div>
+        <div style="margin-top:15px;">
+          <b>📂 ${t('backup.download')}:</b>
+          <div id="exportList" style="margin-top:10px;font-size:13px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="title" style="font-size:16px;">${t('backup.importTitle')}</div>
+        <p style="margin:10px 0;color:#776A62;font-size:13px;">${t('backup.importWarn')}</p>
+        <input type="file" id="importFile" accept=".json" style="margin:10px 0;">
+        <br>
+        <button class="btn" onclick="doImport()">${t('backup.importBtn')}</button>
+        <div id="importResult" style="margin-top:15px;"></div>
+      </div>
+    </div>
+    <div class="card" style="max-width:1000px;margin-top:20px;">
+      <div class="title">${t('backup.cardTitle')}</div>
+      <p style="margin:10px 0;color:#776A62;">${t('backup.desc')}</p>
+      <button class="btn" onclick="doBackup()">${t('backup.btn')}</button>
+      <div id="backupResult" style="margin-top:15px;"></div>
+    </div>
+    <div class="alert alert-warning" style="margin-top:20px;max-width:1000px;">${t('backup.tip')}</div>`;
+  loadExportList();
+}
+
+function doExport() {
+  document.getElementById('exportResult').innerHTML = `<div class="alert">${t('backup.creating')}</div>`;
+  call('exportAllData', undefined, msg => {
+    document.getElementById('exportResult').innerHTML = `<div class="alert alert-success">${msg.replace(/\n/g,'<br>')}</div>`;
+    loadExportList();
+  });
+}
+
+function loadExportList() {
+  call('getExportFile', undefined, files => {
+    const list = document.getElementById('exportList');
+    if (!files.length) { list.innerHTML = `<div style="color:#776A62;">${t('backup.noBackups')}</div>`; return; }
+    list.innerHTML = files.slice(0, 5).map(f => `
+      <div style="padding:8px;background:#fff;border-radius:5px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;">
+        <span>📄 ${f.name}</span>
+        <button class="btn btn-sm" onclick="downloadExport('${f.id}','${f.name}')">${t('backup.download')}</button>
+      </div>
+    `).join('');
+  });
+}
+
+function downloadExport(fileId, fileName) {
+  call('downloadFile', fileId, data => {
+    const blob = new Blob([data.content], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
+  });
+}
+
+function doImport() {
+  const fileInput = document.getElementById('importFile');
+  if (!fileInput.files.length) { alert(t('common.chooseFile')); return; }
+  if (!confirm(t('common.confirmReplace'))) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('importResult').innerHTML = `<div class="alert">${t('backup.creating')}</div>`;
+    call('importAllData', e.target.result, msg => {
+      const cls = msg.includes('❌') ? 'alert-danger' : 'alert-success';
+      document.getElementById('importResult').innerHTML = `<div class="alert ${cls}">${msg.replace(/\n/g,'<br>')}</div>`;
+      if (!msg.includes('❌')) setTimeout(() => loadDashboard(), 2000);
+    });
+  };
+  reader.readAsText(fileInput.files[0]);
+}
+
+function doBackup() {
+  document.getElementById('backupResult').innerHTML = `<div class="alert">${t('backup.creating')}</div>`;
+  call('createBackup', undefined, msg => {
+    document.getElementById('backupResult').innerHTML = `<div class="alert alert-success">${msg.replace(/\n/g,'<br>')}</div>`;
+  });
+}
+
+// ===== الإعدادات =====
+function loadSettings() {
+  call('getSettings', undefined, s => {
+    content.innerHTML = `
+      <div class="section-title">${t('settings.title')}</div>
+      <div class="card" style="max-width:600px;">
+        <div class="form-group"><label>${t('settings.companyName')}</label><input id="st_name" value="${s['اسم_الشركة']||''}"></div>
+        <div class="form-group"><label>${t('settings.currency')}</label><input id="st_cur" value="${s['العملة']||'دج'}"></div>
+        <div class="form-group"><label>${t('settings.phone')}</label><input id="st_phone" value="${s['الهاتف']||''}"></div>
+        <div class="form-group"><label>${t('settings.address')}</label><input id="st_addr" value="${s['العنوان']||''}"></div>
+        <div class="form-group"><label>${t('settings.userName')}</label><input id="st_user" value="${s['اسم_المستخدم']||''}"></div>
+        <button class="btn btn-success" onclick="saveSettings()">${t('settings.save')}</button>
+      </div>`;
+  });
+}
+
+function saveSettings() {
+  const data = {
+    'اسم_الشركة': document.getElementById('st_name').value,
+    'العملة': document.getElementById('st_cur').value,
+    'الهاتف': document.getElementById('st_phone').value,
+    'العنوان': document.getElementById('st_addr').value,
+    'اسم_المستخدم': document.getElementById('st_user').value
+  };
+  call('saveSettings', data, ()=>alert(t('settings.saved')));
+}
+
+applyLang();
+loadDashboard();
+</script>
+</body>
+</html>
